@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HouseCall - Real Estate AI Dashboard</title>
+    <meta property="og:title" content="HouseCall - Real Estate AI">
+    <meta property="og:description" content="AI-powered real estate voice agent. Call in to search properties, schedule viewings, and connect with your agent.">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+
+        header {
+            background: linear-gradient(135deg, #1a1d2e 0%, #252940 100%);
+            border-bottom: 3px solid #e67e22;
+            padding: 16px 30px;
+            display: flex; align-items: center; gap: 20px;
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #e67e22; }
+        .logo small { font-size: 0.7rem; color: #8a8fa8; font-weight: 400; display: block; }
+        .header-spacer { flex: 1; }
+        .agent-name { color: #8a8fa8; font-size: 0.9rem; }
+        .phone-link {
+            background: rgba(230, 126, 34, 0.12); border: 1px solid #e67e22; color: #e67e22;
+            padding: 10px 22px; border-radius: 8px; text-decoration: none;
+            font-weight: 600; font-size: 1.1rem; white-space: nowrap; transition: all 0.2s;
+        }
+        .phone-link:hover { background: #e67e22; color: #0f1117; }
+
+        .container { max-width: 1300px; margin: 0 auto; padding: 24px; }
+
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #1a1d2e; border-radius: 12px; padding: 20px; border: 1px solid #2a2e42; }
+        .stat-card .label { font-size: 0.8rem; color: #8a8fa8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; color: #e67e22; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid #1a1d2e; }
+        .tab {
+            background: transparent; color: #8a8fa8; border: none; padding: 10px 20px;
+            font-size: 0.9rem; cursor: pointer; border-bottom: 2px solid transparent;
+            margin-bottom: -2px; transition: all 0.2s;
+        }
+        .tab:hover { color: #e0e0e0; }
+        .tab.active { color: #e67e22; border-bottom-color: #e67e22; font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        .toolbar h2 { font-size: 1.2rem; color: #ccc; }
+        .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+        .filter-btn {
+            background: #1a1d2e; color: #8a8fa8; border: 1px solid #2a2e42;
+            padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+        }
+        .filter-btn:hover { border-color: #e67e22; color: #e67e22; }
+        .filter-btn.active { background: #e67e22; color: #0f1117; border-color: #e67e22; font-weight: 600; }
+
+        .btn { background: #e67e22; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn:hover { background: #d35400; }
+        .btn-sm { padding: 4px 10px; font-size: 0.75rem; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+
+        .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #2a2e42; }
+        table { width: 100%; border-collapse: collapse; background: #1a1d2e; }
+        thead th { background: #252940; padding: 12px 16px; text-align: left; font-size: 0.8rem; color: #8a8fa8; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #2a2e42; }
+        tbody tr { border-bottom: 1px solid #1e2235; transition: background 0.15s; }
+        tbody tr:hover { background: #20243a; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody td { padding: 12px 16px; font-size: 0.85rem; vertical-align: top; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+        .badge.new { background: rgba(52, 152, 219, 0.15); color: #3498db; }
+        .badge.qualified { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+        .badge.contacted { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+        .badge.converted { background: rgba(230, 126, 34, 0.15); color: #e67e22; }
+        .badge.lost { background: rgba(239, 83, 80, 0.15); color: #ef5350; }
+        .badge.scheduled { background: rgba(52, 152, 219, 0.15); color: #3498db; }
+        .badge.confirmed { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+        .badge.completed { background: rgba(100, 181, 246, 0.15); color: #64b5f6; }
+        .badge.cancelled { background: rgba(239, 83, 80, 0.15); color: #ef5350; }
+        .badge.active { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+        .badge.pending { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+        .badge.sold { background: rgba(100, 181, 246, 0.15); color: #64b5f6; }
+        .badge.withdrawn { background: rgba(239, 83, 80, 0.15); color: #ef5350; }
+
+        .score { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+        .score.high { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+        .score.mid { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+        .score.low { background: rgba(239, 83, 80, 0.15); color: #ef5350; }
+
+        .enriched-icon { color: #9b59b6; font-size: 0.7rem; cursor: help; }
+        .price-col { font-weight: 600; color: #e67e22; white-space: nowrap; }
+        .time-ago { color: #666; font-size: 0.8rem; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #555; }
+        .empty-state p { font-size: 1.1rem; margin-bottom: 8px; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #1a1d2e; border-radius: 12px; padding: 30px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; border: 1px solid #2a2e42; }
+        .modal h3 { margin-bottom: 20px; color: #e67e22; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.8rem; color: #8a8fa8; margin-bottom: 4px; text-transform: uppercase; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; background: #252940; border: 1px solid #2a2e42; color: #e0e0e0;
+            padding: 8px 12px; border-radius: 6px; font-size: 0.9rem;
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            header { padding: 12px 16px; gap: 12px; }
+            .phone-link { font-size: 0.85rem; padding: 6px 12px; }
+            .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            table { font-size: 0.8rem; min-width: 700px; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">HouseCall<small>AI Real Estate Agent</small></div>
+        <div class="header-spacer"></div>
+        <span class="agent-name" id="agent-name"></span>
+        <a href="#" class="phone-link" id="phone-link" style="display:none"></a>
+    </header>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card"><span class="label">Total Leads</span><div class="value" id="stat-leads">0</div></div>
+            <div class="stat-card"><span class="label">Qualified Leads</span><div class="value" id="stat-qualified">0</div></div>
+            <div class="stat-card"><span class="label">Appointments Today</span><div class="value" id="stat-appointments">0</div></div>
+            <div class="stat-card"><span class="label">Calls Today</span><div class="value" id="stat-calls">0</div></div>
+            <div class="stat-card"><span class="label">Active Listings</span><div class="value" id="stat-listings">0</div></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="leads">Leads</button>
+            <button class="tab" data-tab="appointments">Appointments</button>
+            <button class="tab" data-tab="calls">Call Log</button>
+            <button class="tab" data-tab="properties">Properties</button>
+        </div>
+
+        <!-- LEADS TAB -->
+        <div class="tab-content active" id="tab-leads">
+            <div class="toolbar">
+                <h2>Leads</h2>
+                <div class="filters" id="lead-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="new">New</button>
+                    <button class="filter-btn" data-filter="qualified">Qualified</button>
+                    <button class="filter-btn" data-filter="contacted">Contacted</button>
+                    <button class="filter-btn" data-filter="converted">Converted</button>
+                    <button class="filter-btn" data-filter="lost">Lost</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>Name</th><th>Phone</th><th>Email</th><th>Budget</th><th>Type</th><th>Location</th><th>Timeline</th><th>Score</th><th>Status</th><th>Added</th>
+                </tr></thead><tbody id="leads-body"></tbody></table>
+            </div>
+        </div>
+
+        <!-- APPOINTMENTS TAB -->
+        <div class="tab-content" id="tab-appointments">
+            <div class="toolbar">
+                <h2>Appointments</h2>
+                <div class="filters" id="appt-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+                    <button class="filter-btn" data-filter="today">Today</button>
+                    <button class="filter-btn" data-filter="past">Past</button>
+                    <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>Date</th><th>Time</th><th>Lead</th><th>Property</th><th>Type</th><th>Status</th><th>Notes</th>
+                </tr></thead><tbody id="appts-body"></tbody></table>
+            </div>
+        </div>
+
+        <!-- CALL LOG TAB -->
+        <div class="tab-content" id="tab-calls">
+            <div class="toolbar"><h2>Call Log</h2></div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>Time</th><th>Caller</th><th>Duration</th><th>Outcome</th><th>Summary</th>
+                </tr></thead><tbody id="calls-body"></tbody></table>
+            </div>
+        </div>
+
+        <!-- PROPERTIES TAB -->
+        <div class="tab-content" id="tab-properties">
+            <div class="toolbar">
+                <h2>Properties</h2>
+                <button class="btn" onclick="openPropertyModal()">+ Add Property</button>
+            </div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>MLS ID</th><th>Address</th><th>Price</th><th>Type</th><th>Beds/Bath</th><th>Sqft</th><th>Status</th><th>Listed</th><th>Actions</th>
+                </tr></thead><tbody id="props-body"></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Property Modal -->
+    <div class="modal-overlay" id="property-modal">
+        <div class="modal">
+            <h3 id="modal-title">Add Property</h3>
+            <form id="property-form" onsubmit="saveProperty(event)">
+                <input type="hidden" id="prop-edit-mls">
+                <div class="form-row">
+                    <div class="form-group"><label>MLS ID *</label><input type="text" id="prop-mls" required></div>
+                    <div class="form-group"><label>Price</label><input type="number" id="prop-price" step="1000"></div>
+                </div>
+                <div class="form-group"><label>Address *</label><input type="text" id="prop-address" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label>City</label><input type="text" id="prop-city"></div>
+                    <div class="form-group"><label>State</label><input type="text" id="prop-state" value="TX"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Zip Code</label><input type="text" id="prop-zip"></div>
+                    <div class="form-group"><label>Neighborhood</label><input type="text" id="prop-neighborhood"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Property Type</label>
+                        <select id="prop-type">
+                            <option value="Single Family">Single Family</option>
+                            <option value="Condo">Condo</option>
+                            <option value="Townhome">Townhome</option>
+                            <option value="Multi-Family">Multi-Family</option>
+                            <option value="Ranch">Ranch</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Status</label>
+                        <select id="prop-status">
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="sold">Sold</option>
+                            <option value="withdrawn">Withdrawn</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Bedrooms</label><input type="number" id="prop-beds"></div>
+                    <div class="form-group"><label>Bathrooms</label><input type="number" id="prop-baths" step="0.5"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Sqft</label><input type="number" id="prop-sqft"></div>
+                    <div class="form-group"><label>Year Built</label><input type="number" id="prop-year"></div>
+                </div>
+                <div class="form-group"><label>Description</label><textarea id="prop-desc"></textarea></div>
+                <div class="form-group"><label>Features (comma-separated)</label><input type="text" id="prop-features"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" style="background:#555" onclick="closePropertyModal()">Cancel</button>
+                    <button type="submit" class="btn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────
+let leads = [], appointments = [], calls = [], properties = [];
+let leadFilter = 'all', apptFilter = 'all';
+
+// ── Tabs ─────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    });
+});
+
+// ── Filters ──────────────────────────────────────────────────────
+document.getElementById('lead-filters').addEventListener('click', e => {
+    if (!e.target.classList.contains('filter-btn')) return;
+    document.querySelectorAll('#lead-filters .filter-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    leadFilter = e.target.dataset.filter;
+    renderLeads();
+});
+
+document.getElementById('appt-filters').addEventListener('click', e => {
+    if (!e.target.classList.contains('filter-btn')) return;
+    document.querySelectorAll('#appt-filters .filter-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    apptFilter = e.target.dataset.filter;
+    renderAppointments();
+});
+
+// ── Helpers ──────────────────────────────────────────────────────
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function fmtPrice(p) { return p ? '$' + Number(p).toLocaleString() : '-'; }
+function fmtDate(d) { if (!d) return '-'; try { return new Date(d.replace(' ', 'T') + (d.includes('T') || d.includes('+') || d.includes('Z') ? '' : 'Z')).toLocaleDateString(); } catch(e) { return d; } }
+function fmtTime(t) {
+    if (!t) return '-';
+    try {
+        const [h,m] = t.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`;
+    } catch(e) { return t; }
+}
+function timeAgo(d) {
+    if (!d) return '';
+    // SQLite datetime('now') returns "2026-03-05 15:52:24" (space separator)
+    const normalized = d.replace(' ', 'T') + (d.includes('+') || d.includes('Z') ? '' : 'Z');
+    const ts = new Date(normalized).getTime();
+    if (isNaN(ts)) return '';
+    const ms = Date.now() - ts;
+    const m = Math.floor(ms/60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m/60);
+    if (h < 24) return h + 'h ago';
+    return Math.floor(h/24) + 'd ago';
+}
+function scoreClass(s) { return s >= 60 ? 'high' : s >= 30 ? 'mid' : 'low'; }
+function maskName(n) { return n && n.length > 1 ? n[0] + '*'.repeat(n.length - 1) : n || '-'; }
+
+// ── Render ───────────────────────────────────────────────────────
+function renderLeads() {
+    const body = document.getElementById('leads-body');
+    let filtered = leads;
+    if (leadFilter !== 'all') filtered = leads.filter(l => l.lead_status === leadFilter);
+    if (!filtered.length) { body.innerHTML = '<tr><td colspan="10" class="empty-state"><p>No leads found</p></td></tr>'; return; }
+    body.innerHTML = filtered.map(l => {
+        const locs = Array.isArray(l.preferred_locations) ? l.preferred_locations.join(', ') : (l.preferred_locations || '-');
+        const budget = (l.budget_min || l.budget_max) ?
+            (l.budget_min ? fmtPrice(l.budget_min) + ' - ' : '') + (l.budget_max ? fmtPrice(l.budget_max) : '') : '-';
+        const enriched = l.trestle_owner_name ? ' <span class="enriched-icon" title="Trestle enriched">&#9679;</span>' : '';
+        return `<tr>
+            <td>${esc(l.first_name || '')} ${esc(l.last_name || '')}${enriched}</td>
+            <td>${esc(l.phone)}</td>
+            <td>${esc(l.email || '-')}</td>
+            <td>${budget}</td>
+            <td>${esc(l.property_type_preference || '-')}</td>
+            <td>${esc(locs)}</td>
+            <td>${esc(l.timeline || '-')}</td>
+            <td><span class="score ${scoreClass(l.lead_score || 0)}">${l.lead_score || 0}</span></td>
+            <td><span class="badge ${l.lead_status || 'new'}">${l.lead_status || 'new'}</span></td>
+            <td class="time-ago">${timeAgo(l.created_at)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderAppointments() {
+    const body = document.getElementById('appts-body');
+    const today = new Date().toISOString().split('T')[0];
+    let filtered = appointments;
+    if (apptFilter === 'today') filtered = appointments.filter(a => a.appointment_date === today);
+    else if (apptFilter === 'upcoming') filtered = appointments.filter(a => a.appointment_date >= today && a.status !== 'cancelled');
+    else if (apptFilter === 'past') filtered = appointments.filter(a => a.appointment_date < today);
+    else if (apptFilter === 'cancelled') filtered = appointments.filter(a => a.status === 'cancelled');
+    if (!filtered.length) { body.innerHTML = '<tr><td colspan="7" class="empty-state"><p>No appointments</p></td></tr>'; return; }
+    body.innerHTML = filtered.map(a => `<tr>
+        <td>${fmtDate(a.appointment_date)}</td>
+        <td>${fmtTime(a.appointment_time)}</td>
+        <td>${esc(a.lead_name || a.lead_phone || '-')}</td>
+        <td>${esc(a.property_address || '-')}</td>
+        <td>${esc(a.appointment_type || '-')}</td>
+        <td><span class="badge ${a.status}">${a.status}</span></td>
+        <td>${esc(a.notes || '-')}</td>
+    </tr>`).join('');
+}
+
+function renderCalls() {
+    const body = document.getElementById('calls-body');
+    if (!calls.length) { body.innerHTML = '<tr><td colspan="5" class="empty-state"><p>No calls recorded</p></td></tr>'; return; }
+    body.innerHTML = calls.map(c => {
+        const dur = c.duration_seconds ? Math.floor(c.duration_seconds / 60) + 'm ' + (c.duration_seconds % 60) + 's' : '-';
+        return `<tr>
+            <td class="time-ago">${timeAgo(c.created_at)}</td>
+            <td>${esc(c.caller_phone || '-')}</td>
+            <td>${dur}</td>
+            <td><span class="badge ${(c.call_outcome||'').replace(/\s/g,'_')}">${esc(c.call_outcome || '-')}</span></td>
+            <td>${esc(c.summary || '-')}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderProperties() {
+    const body = document.getElementById('props-body');
+    if (!properties.length) { body.innerHTML = '<tr><td colspan="9" class="empty-state"><p>No properties</p></td></tr>'; return; }
+    body.innerHTML = properties.map(p => `<tr>
+        <td><code>${esc(p.mls_id)}</code></td>
+        <td>${esc(p.address)}${p.city ? ', ' + esc(p.city) : ''}</td>
+        <td class="price-col">${fmtPrice(p.price)}</td>
+        <td>${esc(p.property_type || '-')}</td>
+        <td>${p.bedrooms || '-'}/${p.bathrooms || '-'}</td>
+        <td>${p.sqft ? Number(p.sqft).toLocaleString() : '-'}</td>
+        <td><span class="badge ${p.listing_status}">${p.listing_status}</span></td>
+        <td class="time-ago">${timeAgo(p.created_at)}</td>
+        <td>
+            <button class="btn btn-sm" onclick='editProperty(${JSON.stringify(JSON.stringify(p))})'>Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteProperty('${esc(p.mls_id)}')">Del</button>
+        </td>
+    </tr>`).join('');
+}
+
+// ── API ──────────────────────────────────────────────────────────
+async function fetchAll() {
+    try {
+        const [statsR, leadsR, apptsR, callsR, propsR, agentR, phoneR] = await Promise.all([
+            fetch('/api/stats'), fetch('/api/leads'), fetch('/api/appointments'),
+            fetch('/api/call-log'), fetch('/api/properties'), fetch('/api/agent-info'), fetch('/api/phone'),
+        ]);
+        const stats = await statsR.json();
+        document.getElementById('stat-leads').textContent = stats.total_leads || 0;
+        document.getElementById('stat-qualified').textContent = stats.qualified_leads || 0;
+        document.getElementById('stat-appointments').textContent = stats.appointments_today || 0;
+        document.getElementById('stat-calls').textContent = stats.calls_today || 0;
+        document.getElementById('stat-listings').textContent = stats.active_listings || 0;
+
+        leads = (await leadsR.json()).leads || [];
+        appointments = (await apptsR.json()).appointments || [];
+        calls = (await callsR.json()).calls || [];
+        properties = (await propsR.json()).properties || [];
+
+        const agent = await agentR.json();
+        document.getElementById('agent-name').textContent = agent.name || '';
+
+        const phone = await phoneR.json();
+        if (phone.phone) {
+            const el = document.getElementById('phone-link');
+            el.href = 'tel:' + phone.phone;
+            el.textContent = phone.display || phone.phone;
+            el.style.display = '';
+        }
+
+        renderLeads(); renderAppointments(); renderCalls(); renderProperties();
+    } catch(e) { console.error('Fetch error:', e); }
+}
+
+// ── Property CRUD ────────────────────────────────────────────────
+function openPropertyModal(data) {
+    document.getElementById('modal-title').textContent = data ? 'Edit Property' : 'Add Property';
+    document.getElementById('prop-edit-mls').value = data ? data.mls_id : '';
+    document.getElementById('prop-mls').value = data ? data.mls_id : '';
+    document.getElementById('prop-mls').disabled = !!data;
+    document.getElementById('prop-address').value = data ? data.address : '';
+    document.getElementById('prop-city').value = data ? (data.city || '') : '';
+    document.getElementById('prop-state').value = data ? (data.state || 'TX') : 'TX';
+    document.getElementById('prop-zip').value = data ? (data.zip_code || '') : '';
+    document.getElementById('prop-neighborhood').value = data ? (data.neighborhood || '') : '';
+    document.getElementById('prop-price').value = data ? (data.price || '') : '';
+    document.getElementById('prop-type').value = data ? (data.property_type || 'Single Family') : 'Single Family';
+    document.getElementById('prop-status').value = data ? (data.listing_status || 'active') : 'active';
+    document.getElementById('prop-beds').value = data ? (data.bedrooms || '') : '';
+    document.getElementById('prop-baths').value = data ? (data.bathrooms || '') : '';
+    document.getElementById('prop-sqft').value = data ? (data.sqft || '') : '';
+    document.getElementById('prop-year').value = data ? (data.year_built || '') : '';
+    document.getElementById('prop-desc').value = data ? (data.description || '') : '';
+    let feats = data && data.features ? data.features : [];
+    if (typeof feats === 'string') try { feats = JSON.parse(feats); } catch(e) { feats = [feats]; }
+    document.getElementById('prop-features').value = Array.isArray(feats) ? feats.join(', ') : '';
+    document.getElementById('property-modal').classList.add('active');
+}
+
+function closePropertyModal() {
+    document.getElementById('property-modal').classList.remove('active');
+}
+
+function editProperty(jsonStr) {
+    openPropertyModal(JSON.parse(jsonStr));
+}
+
+async function saveProperty(e) {
+    e.preventDefault();
+    const editMls = document.getElementById('prop-edit-mls').value;
+    const featsRaw = document.getElementById('prop-features').value;
+    const features = featsRaw ? featsRaw.split(',').map(f => f.trim()).filter(Boolean) : [];
+    const body = {
+        mls_id: document.getElementById('prop-mls').value,
+        address: document.getElementById('prop-address').value,
+        city: document.getElementById('prop-city').value,
+        state: document.getElementById('prop-state').value,
+        zip_code: document.getElementById('prop-zip').value,
+        neighborhood: document.getElementById('prop-neighborhood').value,
+        price: Number(document.getElementById('prop-price').value) || null,
+        property_type: document.getElementById('prop-type').value,
+        listing_status: document.getElementById('prop-status').value,
+        bedrooms: Number(document.getElementById('prop-beds').value) || null,
+        bathrooms: Number(document.getElementById('prop-baths').value) || null,
+        sqft: Number(document.getElementById('prop-sqft').value) || null,
+        year_built: Number(document.getElementById('prop-year').value) || null,
+        description: document.getElementById('prop-desc').value,
+        features: features,
+    };
+    try {
+        if (editMls) {
+            await fetch('/api/properties/' + encodeURIComponent(editMls), { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        } else {
+            await fetch('/api/properties', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        }
+        closePropertyModal();
+        fetchAll();
+    } catch(e) { alert('Error saving property: ' + e.message); }
+}
+
+async function deleteProperty(mlsId) {
+    if (!confirm('Delete property ' + mlsId + '?')) return;
+    try {
+        await fetch('/api/properties/' + encodeURIComponent(mlsId), { method: 'DELETE' });
+        fetchAll();
+    } catch(e) { alert('Error deleting: ' + e.message); }
+}
+
+// Close modal on overlay click
+document.getElementById('property-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closePropertyModal();
+});
+
+// ── Init ─────────────────────────────────────────────────────────
+fetchAll();
+setInterval(fetchAll, 30000);
+</script>
+</body>
+</html>
