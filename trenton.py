@@ -92,6 +92,18 @@ def normalize_date(d):
     return d
 
 
+def normalize_email(e):
+    """Convert spoken email ('Brian dot west at g mail dot com') to proper format."""
+    if not e or "@" in e:
+        return e
+    import re
+    e = e.strip().lower()
+    e = re.sub(r'\s+dot\s+', '.', e)
+    e = re.sub(r'\s+at\s+', '@', e)
+    e = e.replace(' ', '')
+    return e
+
+
 # ── Lead Scoring ─────────────────────────────────────────────────────
 
 def compute_lead_score(email=None, budget_max=None, timeline=None,
@@ -200,7 +212,7 @@ class TrentonAgent(AgentBase):
                 "email",
                 "What email address can we reach you at?",
                 confirm=True,
-                prompt="Accept the email as spoken. Spell it back for confirmation."
+                prompt="Convert the spoken email to proper format: 'dot' → '.', 'at' → '@', remove spaces between words that form a domain (e.g. 'g mail' → 'gmail'). Submit as a valid email like 'user@example.com'. Spell it back for confirmation."
             ) \
             .add_gather_question(
                 "budget",
@@ -403,7 +415,7 @@ class TrentonAgent(AgentBase):
 
             first_name = (answers.get("first_name") or "").strip()
             last_name = (answers.get("last_name") or "").strip()
-            email = (answers.get("email") or "").strip()
+            email = normalize_email((answers.get("email") or "").strip())
 
             # Parse budget
             budget_min, budget_max = None, None
