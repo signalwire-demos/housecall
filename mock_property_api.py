@@ -17,63 +17,8 @@ PROPERTY_TYPE_DISPLAY = {
 }
 
 
-# ── Voice Formatting Helpers ─────────────────────────────────────────
-
-def format_price_voice(price):
-    """Convert price to voice-friendly string. 485000 -> 'four hundred eighty-five thousand dollars'."""
-    if not price:
-        return "price not available"
-    price = int(price)
-    if price >= 1_000_000:
-        millions = price // 1_000_000
-        remainder = (price % 1_000_000) // 1_000
-        if remainder:
-            return f"{_number_to_words(millions)} million {_number_to_words(remainder)} thousand dollars"
-        return f"{_number_to_words(millions)} million dollars"
-    elif price >= 1_000:
-        thousands = price // 1_000
-        remainder = price % 1_000
-        if remainder:
-            return f"{_number_to_words(thousands)} thousand {_number_to_words(remainder)} dollars"
-        return f"{_number_to_words(thousands)} thousand dollars"
-    return f"{_number_to_words(price)} dollars"
-
-
-def format_sqft_voice(sqft):
-    """Convert sqft to voice-friendly string. 1850 -> 'eighteen hundred fifty square feet'."""
-    if not sqft:
-        return "size not available"
-    sqft = int(sqft)
-    if sqft >= 1000:
-        hundreds = sqft // 100
-        remainder = sqft % 100
-        if remainder:
-            return f"{_number_to_words(hundreds)} hundred {_number_to_words(remainder)} square feet"
-        return f"{_number_to_words(hundreds)} hundred square feet"
-    return f"{_number_to_words(sqft)} square feet"
-
-
-def _number_to_words(n):
-    """Convert integer to English words (0-999)."""
-    if n == 0:
-        return "zero"
-    ones = ["", "one", "two", "three", "four", "five", "six", "seven",
-            "eight", "nine", "ten", "eleven", "twelve", "thirteen",
-            "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
-    tens = ["", "", "twenty", "thirty", "forty", "fifty",
-            "sixty", "seventy", "eighty", "ninety"]
-
-    if n < 20:
-        return ones[n]
-    if n < 100:
-        return tens[n // 10] + ("-" + ones[n % 10] if n % 10 else "")
-    return ones[n // 100] + " hundred" + (" " + _number_to_words(n % 100) if n % 100 else "")
-
-
 def summarize_property(prop, index):
-    """Create voice-friendly property description for phone reading."""
-    price_str = format_price_voice(prop.get("price"))
-    sqft_str = format_sqft_voice(prop.get("sqft"))
+    """Create property description for phone reading."""
     beds = prop.get("bedrooms", "unknown")
     baths = prop.get("bathrooms", "unknown")
     ptype = PROPERTY_TYPE_DISPLAY.get(prop.get("property_type", ""), "home")
@@ -84,8 +29,8 @@ def summarize_property(prop, index):
     summary = f"Property {index}: A {beds} bedroom, {baths} bathroom {ptype}"
     if location:
         summary += f" in {location}"
-    summary += f", listed at {price_str}."
-    summary += f" It's {sqft_str}"
+    summary += f", listed at ${prop.get('price', 0):,}."
+    summary += f" It's {prop.get('sqft', 0):,} square feet"
     if prop.get("year_built"):
         summary += f", built in {prop['year_built']}"
     summary += "."

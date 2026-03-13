@@ -21,7 +21,6 @@ from mock_property_api import (
     mock_search_properties,
     mock_get_property,
     summarize_property,
-    format_price_voice,
 )
 from state_store import (
     load_call_state, save_call_state, delete_call_state,
@@ -679,14 +678,13 @@ class TrentonAgent(AgentBase):
                 except (json.JSONDecodeError, TypeError):
                     features = []
 
-            price_str = format_price_voice(prop.get("price"))
             desc = prop.get("description", "")
             feature_str = ", ".join(features[:5]) if features else "no listed features"
 
             detail = (
                 f"{prop.get('address', 'Address unknown')}, "
                 f"{prop.get('city', '')}, {prop.get('state', '')}. "
-                f"Listed at {price_str}. "
+                f"Listed at ${prop.get('price', 0):,}. "
                 f"{prop.get('bedrooms', '?')} bedrooms, {prop.get('bathrooms', '?')} bathrooms, "
                 f"{prop.get('sqft', '?')} square feet. "
                 f"Built in {prop.get('year_built', 'unknown')}. "
