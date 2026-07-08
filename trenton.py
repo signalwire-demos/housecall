@@ -12,8 +12,8 @@ from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
-from signalwire_agents import AgentBase, AgentServer
-from signalwire_agents.core.function_result import SwaigFunctionResult
+from signalwire import AgentBase, AgentServer
+from signalwire.core.function_result import SwaigFunctionResult
 
 import config
 from api_clients import trestle_reverse_phone, geocode_address
