@@ -1,5 +1,5 @@
-signalwire-agents==1.0.22
-requests>=2.31.0
+signalwire-sdk>=3.0.2
+requests>=2.32.4
 python-dotenv>=1.0.0
-gunicorn>=21.0.0
+gunicorn>=23.0.0
 uvicorn>=0.34.2
